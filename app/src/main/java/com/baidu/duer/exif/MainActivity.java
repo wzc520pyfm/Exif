@@ -1,5 +1,6 @@
 package com.baidu.duer.exif;
 
+import android.content.Context;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
@@ -7,6 +8,7 @@ import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,8 +22,14 @@ import com.jph.takephoto.app.TakePhotoActivity;
 import com.jph.takephoto.model.TImage;
 import com.jph.takephoto.model.TResult;
 import com.jph.takephoto.model.TakePhotoOptions;
+import com.qmuiteam.qmui.skin.QMUISkinHelper;
+import com.qmuiteam.qmui.skin.QMUISkinManager;
+import com.qmuiteam.qmui.skin.QMUISkinValueBuilder;
 import com.qmuiteam.qmui.util.QMUIDisplayHelper;
+import com.qmuiteam.qmui.util.QMUIResHelper;
 import com.qmuiteam.qmui.widget.QMUIRadiusImageView2;
+import com.qmuiteam.qmui.widget.popup.QMUIPopup;
+import com.qmuiteam.qmui.widget.popup.QMUIPopups;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,8 +46,10 @@ public class MainActivity extends TakePhotoActivity {
     @BindView(R.id.textView)
     TextView mText;
 
+    private QMUIPopup mNormalPopup;
     private TakePhoto takePhoto;
     private Uri imageUri;
+    public Context mContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,11 +57,12 @@ public class MainActivity extends TakePhotoActivity {
         View contentView = LayoutInflater.from(this).inflate(R.layout.activity_main, null);
         setContentView(contentView);
         ButterKnife.bind(this);
+        mContext = this;
         takePhoto = getTakePhoto();
         configTakePhotoOption(takePhoto);
     }
 
-    @OnClick({R.id.takePhotoBtn, R.id.selectPhotoBtn})
+    @OnClick({R.id.takePhotoBtn, R.id.selectPhotoBtn, R.id.tips})
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.takePhotoBtn:
@@ -65,6 +76,38 @@ public class MainActivity extends TakePhotoActivity {
                 imageUri = getImageCropUri();
                 // 从相册选取不裁剪
                 takePhoto.onPickFromGallery();
+                break;
+            case R.id.tips:
+                //TODO 修复文字不展示的bug
+                TextView textView = new TextView(mContext);
+                textView.setLineSpacing(QMUIDisplayHelper.dp2px(mContext, 4), 1.0f);
+                int padding = QMUIDisplayHelper.dp2px(mContext, 20);
+                textView.setPadding(padding, padding, padding, padding);
+                textView.setText("选择一张照片或者拍照,查看照片里平时你不在意的信息");
+                textView.setTextColor(
+                        QMUIResHelper.getAttrColor(mContext, R.attr.app_skin_common_title_text_color));
+                QMUISkinValueBuilder builder = QMUISkinValueBuilder.acquire();
+                builder.textColor(R.attr.app_skin_common_title_text_color);
+                QMUISkinHelper.setSkinValue(textView, builder);
+                builder.release();
+                mNormalPopup = QMUIPopups.popup(mContext, QMUIDisplayHelper.dp2px(mContext, 250))
+                        .preferredDirection(QMUIPopup.DIRECTION_BOTTOM)
+                        .view(textView)
+                        .skinManager(QMUISkinManager.defaultInstance(mContext))
+                        .edgeProtection(QMUIDisplayHelper.dp2px(mContext, 20))
+                        .dimAmount(0.6f)
+                        .offsetX(QMUIDisplayHelper.dp2px(mContext, 20))
+                        .offsetYIfBottom(QMUIDisplayHelper.dp2px(mContext, 5))
+                        .shadow(true)
+                        .arrow(true)
+                        .animStyle(QMUIPopup.ANIM_GROW_FROM_CENTER)
+                        .onDismiss(new PopupWindow.OnDismissListener() {
+                            @Override
+                            public void onDismiss() {
+                                Toast.makeText(mContext, "onDismiss", Toast.LENGTH_SHORT).show();
+                            }
+                        })
+                        .show(v);
                 break;
         }
     }
@@ -85,6 +128,10 @@ public class MainActivity extends TakePhotoActivity {
         showImg(result.getImage());
     }
 
+    /**
+     * 图片展示
+     * @param image TImage对象,可以通过此对象获取图片path
+     */
     private void showImg(TImage image) {
         getInfo(image.getOriginalPath());
         photoImageView.setImageURI(Uri.fromFile(new File(image.getOriginalPath())));
@@ -95,7 +142,10 @@ public class MainActivity extends TakePhotoActivity {
         photoImageView.setCircle(false);
     }
 
-    // 获取照片的输出报存Uri
+    /**
+     * 获取照片的输出保存Uri
+     * @return 图片保存Uri
+     */
     private Uri getImageCropUri() {
         File file = new File(Environment.getExternalStorageDirectory(), "/temp/" + System.currentTimeMillis() + ".jpg");
         if (!file.getParentFile().exists()) {
@@ -104,6 +154,10 @@ public class MainActivity extends TakePhotoActivity {
         return Uri.fromFile(file);
     }
 
+    /**
+     * takePhoto配置
+     * @param takePhoto takePhoto实例
+     */
     private void configTakePhotoOption(TakePhoto takePhoto) {
         TakePhotoOptions.Builder builder = new TakePhotoOptions.Builder();
         takePhoto.setTakePhotoOptions(builder.create());

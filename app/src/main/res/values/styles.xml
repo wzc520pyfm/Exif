@@ -7,4 +7,5 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <attr name="app_skin_common_title_text_color" format="color|reference" />
 </resources>
