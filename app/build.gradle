@@ -9,7 +9,7 @@ android {
         minSdkVersion 29
         targetSdkVersion 30
         versionCode 1
-        versionName "1.0"
+        versionName "1.1"
 
         // 集成高德地图 START 步骤1
         ndk {
@@ -18,6 +18,13 @@ android {
         }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // 自定义打包名称
+    android.applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "Exif_v${versionName}.apk"
+        }
     }
 
     buildTypes {
