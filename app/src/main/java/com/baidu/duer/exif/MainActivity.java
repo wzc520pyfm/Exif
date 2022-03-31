@@ -5,6 +5,7 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -14,6 +15,14 @@ import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 
+import com.amap.api.maps.AMap;
+import com.amap.api.maps.CameraUpdateFactory;
+import com.amap.api.maps.CoordinateConverter;
+import com.amap.api.maps.MapView;
+import com.amap.api.maps.model.LatLng;
+import com.amap.api.maps.model.Marker;
+import com.amap.api.maps.model.MarkerOptions;
+import com.amap.api.services.core.ServiceSettings;
 import com.baidu.duer.exif.bean.Gps;
 import com.baidu.duer.exif.utils.PositionUtil;
 import com.bumptech.glide.Glide;
@@ -28,12 +37,15 @@ import com.qmuiteam.qmui.skin.QMUISkinValueBuilder;
 import com.qmuiteam.qmui.util.QMUIDisplayHelper;
 import com.qmuiteam.qmui.util.QMUIResHelper;
 import com.qmuiteam.qmui.widget.QMUIRadiusImageView2;
+import com.qmuiteam.qmui.widget.dialog.QMUITipDialog;
 import com.qmuiteam.qmui.widget.popup.QMUIPopup;
 import com.qmuiteam.qmui.widget.popup.QMUIPopups;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -41,6 +53,8 @@ import butterknife.OnClick;
 
 public class MainActivity extends TakePhotoActivity {
 
+    @BindView(R.id.map)
+    MapView mapView;
     @BindView(R.id.photoImageView)
     QMUIRadiusImageView2 photoImageView;
     @BindView(R.id.textView)
@@ -49,6 +63,9 @@ public class MainActivity extends TakePhotoActivity {
     private QMUIPopup mNormalPopup;
     private TakePhoto takePhoto;
     private Uri imageUri;
+    private ExifInterface exifInterface = null;
+    private AMap aMap;
+    private Marker marker;
     public Context mContext;
 
     @Override
@@ -60,30 +77,39 @@ public class MainActivity extends TakePhotoActivity {
         mContext = this;
         takePhoto = getTakePhoto();
         configTakePhotoOption(takePhoto);
+
+        // 集成高德地图 END 步骤5
+        //高德地图隐私政策合规(必须)
+        ServiceSettings.updatePrivacyShow(this,true,true);
+        ServiceSettings.updatePrivacyAgree(this,true);
+        // 高德地图
+        mapView.onCreate(savedInstanceState);// 此方法必须重写(创建地图)
+        aMap = mapView.getMap();
     }
 
-    @OnClick({R.id.takePhotoBtn, R.id.selectPhotoBtn, R.id.tips})
+    @OnClick({R.id.takePhotoBtn, R.id.selectPhotoBtn, R.id.tips, R.id.erasePhotoBtn})
     public void onClick(View v) {
         switch (v.getId()){
             case R.id.takePhotoBtn:
+                reset();
                 Toast.makeText(this, "拍照", Toast.LENGTH_SHORT).show();
                 imageUri = getImageCropUri();
                 // 拍照不裁剪
                 takePhoto.onPickFromCapture(imageUri);
                 break;
             case R.id.selectPhotoBtn:
+                reset();
                 Toast.makeText(this, "选照片", Toast.LENGTH_SHORT).show();
                 imageUri = getImageCropUri();
                 // 从相册选取不裁剪
                 takePhoto.onPickFromGallery();
                 break;
             case R.id.tips:
-                //TODO 修复文字不展示的bug
                 TextView textView = new TextView(mContext);
                 textView.setLineSpacing(QMUIDisplayHelper.dp2px(mContext, 4), 1.0f);
                 int padding = QMUIDisplayHelper.dp2px(mContext, 20);
                 textView.setPadding(padding, padding, padding, padding);
-                textView.setText("选择一张照片或者拍照,查看照片里平时你不在意的信息");
+                textView.setText("选择一张照片来查看照片里的秘密!");
                 textView.setTextColor(
                         QMUIResHelper.getAttrColor(mContext, R.attr.app_skin_common_title_text_color));
                 QMUISkinValueBuilder builder = QMUISkinValueBuilder.acquire();
@@ -109,6 +135,21 @@ public class MainActivity extends TakePhotoActivity {
                         })
                         .show(v);
                 break;
+            case R.id.erasePhotoBtn:
+                if(exifInterface != null) {
+                    eraseInfo(exifInterface);
+                }
+                break;
+        }
+    }
+
+    private void reset() {
+        if (marker != null) {
+            marker.remove();
+            marker = null;
+        }
+        if(exifInterface != null) {
+            exifInterface = null;
         }
     }
 
@@ -169,7 +210,7 @@ public class MainActivity extends TakePhotoActivity {
     private void getInfo(String path) {
         try {
 
-            ExifInterface exifInterface = new ExifInterface(path);
+            exifInterface = new ExifInterface(path);
 
             String guangquan = exifInterface.getAttribute(ExifInterface.TAG_APERTURE);
             String shijain = exifInterface.getAttribute(ExifInterface.TAG_DATETIME);
@@ -200,37 +241,105 @@ public class MainActivity extends TakePhotoActivity {
             double lon = score2dimensionality(longitude);
 
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append("光圈 = " + guangquan+"\n")
-                    .append("时间 = " + shijain+"\n")
-                    .append("曝光时长 = " + baoguangshijian+"\n")
-                    .append("焦距 = " + jiaoju+"\n")
-                    .append("长 = " + chang+"\n")
-                    .append("宽 = " + kuan+"\n")
-                    .append("型号 = " + moshi+"\n")
-                    .append("制造商 = " + zhizaoshang+"\n")
-                    .append("ISO = " + iso+"\n")
-                    .append("角度 = " + jiaodu+"\n")
-                    .append("白平衡 = " + baiph+"\n")
-                    .append("海拔高度 = " + altitude_ref+"\n")
-                    .append("GPS参考高度 = " + altitude+"\n")
-                    .append("GPS时间戳 = " + timestamp+"\n")
-                    .append("GPS定位类型 = " + processing_method+"\n")
-                    .append("GPS参考经度 = " + latitude_ref+"\n")
-                    .append("GPS参考纬度 = " + longitude_ref+"\n")
-                    .append("GPS经度 = " + lon+"\n")
-                    .append("GPS经度 = " + lat+"\n");
+            stringBuilder.append("  " + "光圈 = " + guangquan+"\n  ")
+                    .append("时间 = " + shijain+"\n  ")
+                    .append("曝光时长 = " + baoguangshijian+"\n  ")
+                    .append("焦距 = " + jiaoju+"\n  ")
+                    .append("长 = " + chang+"\n  ")
+                    .append("宽 = " + kuan+"\n  ")
+                    .append("型号 = " + moshi+"\n  ")
+                    .append("制造商 = " + zhizaoshang+"\n  ")
+                    .append("ISO = " + iso+"\n  ")
+                    .append("角度 = " + jiaodu+"\n  ")
+                    .append("白平衡 = " + baiph+"\n  ")
+                    .append("海拔高度 = " + altitude_ref+"\n  ")
+                    .append("GPS参考高度 = " + altitude+"\n  ")
+                    .append("GPS时间戳 = " + timestamp+"\n  ")
+                    .append("GPS定位类型 = " + processing_method+"\n  ")
+                    .append("GPS参考经度 = " + latitude_ref+"\n  ")
+                    .append("GPS参考纬度 = " + longitude_ref+"\n  ")
+                    .append("GPS经度 = " + lon+"\n  ")
+                    .append("GPS经度 = " + lat+"\n  ");
 
             //将获取的到的信息设置到TextView上
             mText.setText(stringBuilder.toString());
 
-            /**
-             * 将wgs坐标转换成火星坐标
-             */
-            Gps wgs2bd = PositionUtil.gps84_To_Gcj02(lat, lon);
+            if(longitude != null && latitude != null) {
+                /**
+                 * 将wgs坐标转换成火星坐标
+                 */
+                Gps gpsGc = PositionUtil.gps84_To_Gcj02(lat, lon);
+                /**
+                 * 将火星坐标系转换成百度坐标系
+                 */
+                Gps gpsBd = PositionUtil.gcj02_To_Bd09(gpsGc.getWgLat(), gpsGc.getWgLon());
+                /**
+                 * 百度坐标系转换成高德坐标系
+                 */
+                CoordinateConverter converter  = new CoordinateConverter(mContext);
+                // CoordType.GPS 待转换坐标类型
+                converter.from(CoordinateConverter.CoordType.BAIDU);
+                // sourceLatLng待转换坐标点 LatLng类型
+                converter.coord(new LatLng(gpsBd.getWgLat(), gpsBd.getWgLon()));
+                // 执行转换操作
+                LatLng desLatLng = converter.convert();
 
+                //设置中心点和缩放比例
+                aMap.moveCamera(CameraUpdateFactory.changeLatLng(desLatLng));
+                aMap.moveCamera(CameraUpdateFactory.zoomTo(15));
+                // 绘制marker
+                Marker marker = aMap.addMarker(new MarkerOptions().position(desLatLng));
+            } else {
+                aMap.moveCamera(CameraUpdateFactory.changeLatLng(new LatLng(39.904989,116.405285)));
+                aMap.moveCamera(CameraUpdateFactory.zoomTo(10));
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * 擦除图片信息
+     */
+    private void eraseInfo(ExifInterface exifInterface) {
+        exifInterface.setAttribute(ExifInterface.TAG_APERTURE, null);
+        exifInterface.setAttribute(ExifInterface.TAG_DATETIME, null);
+        exifInterface.setAttribute(ExifInterface.TAG_EXPOSURE_TIME, null);
+        exifInterface.setAttribute(ExifInterface.TAG_FOCAL_LENGTH, null);
+        exifInterface.setAttribute(ExifInterface.TAG_IMAGE_LENGTH, null);
+        exifInterface.setAttribute(ExifInterface.TAG_IMAGE_WIDTH, null);
+        exifInterface.setAttribute(ExifInterface.TAG_MODEL, null);
+        exifInterface.setAttribute(ExifInterface.TAG_MAKE, null);
+        exifInterface.setAttribute(ExifInterface.TAG_ISO, null);
+        exifInterface.setAttribute(ExifInterface.TAG_ORIENTATION, null);
+        exifInterface.setAttribute(ExifInterface.TAG_WHITE_BALANCE, null);
+        exifInterface.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF, null);
+        exifInterface.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, null);
+        exifInterface.setAttribute(ExifInterface.TAG_GPS_LATITUDE, null);
+        exifInterface.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, null);
+        exifInterface.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, null);
+        exifInterface.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, null);
+        exifInterface.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, null);
+        exifInterface.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD, null);
+        try {
+            exifInterface.saveAttributes();
+            final QMUITipDialog tipDialog = new QMUITipDialog.Builder(mContext)
+                    .setIconType(QMUITipDialog.Builder.ICON_TYPE_SUCCESS)
+                    .setTipWord("擦除成功")
+                    .create();
+            tipDialog.show();
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    tipDialog.dismiss();
+                }
+            };
+            Timer timer = new Timer();
+            timer.schedule(task, 1500);
+        } catch (IOException e) {
+            Log.e("Mine","cannot save exif",e);
         }
 
     }
@@ -257,5 +366,30 @@ public class MainActivity extends TakePhotoActivity {
             dimensionality=dimensionality+v/Math.pow(60,i);
         }
         return dimensionality;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //在activity执行onDestroy时执行mMapView.onDestroy()，销毁地图
+        mapView.onDestroy();
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //在activity执行onResume时执行mMapView.onResume ()，重新绘制加载地图
+        mapView.onResume();
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //在activity执行onPause时执行mMapView.onPause ()，暂停地图的绘制
+        mapView.onPause();
+    }
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        //在activity执行onSaveInstanceState时执行mMapView.onSaveInstanceState (outState)，保存地图当前的状态
+        mapView.onSaveInstanceState(outState);
     }
 }

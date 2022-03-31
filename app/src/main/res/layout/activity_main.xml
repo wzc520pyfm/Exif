@@ -18,10 +18,10 @@
         android:text="@string/selectPhoto"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.247"
+        app:layout_constraintHorizontal_bias="0.388"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.453"
+        app:layout_constraintVertical_bias="0.43"
         app:qmui_isRadiusAdjustBounds="true" />
 
     <com.qmuiteam.qmui.widget.roundwidget.QMUIRoundButton
@@ -42,11 +42,29 @@
         app:layout_constraintVertical_bias="0.443"
         app:qmui_isRadiusAdjustBounds="true" />
 
+    <com.qmuiteam.qmui.widget.roundwidget.QMUIRoundButton
+        android:id="@+id/erasePhotoBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:paddingLeft="16dp"
+        android:paddingTop="10dp"
+        android:paddingRight="16dp"
+        android:paddingBottom="10dp"
+        android:text="@string/eraseInfo"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.076"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.43"
+        app:qmui_isRadiusAdjustBounds="true" />
+
     <com.qmuiteam.qmui.widget.QMUIRadiusImageView2
         android:id="@+id/photoImageView"
         android:layout_width="342dp"
         android:layout_height="227dp"
-        android:layout_marginTop="68dp"
+        android:layout_marginTop="48dp"
         android:clickable="true"
         android:scaleType="centerCrop"
         app:layout_constraintEnd_toEndOf="parent"
@@ -60,17 +78,27 @@
         app:qmui_selected_border_width="1px"
         app:qmui_selected_mask_color="?attr/qmui_config_color_gray_8" />
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="331dp"
-        android:layout_height="349dp"
-        android:text="TextView"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.562"
-        app:layout_constraintStart_toStartOf="parent"
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        app:layout_constraintBottom_toTopOf="@+id/map"
         app:layout_constraintTop_toBottomOf="@+id/selectPhotoBtn"
-        app:layout_constraintVertical_bias="0.555" />
+        tools:layout_editor_absoluteX="5dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/textView"
+                android:layout_width="374dp"
+                android:layout_height="wrap_content"
+                android:text="@string/waiting"
+                android:textColor="#FF9800" />
+
+        </LinearLayout>
+    </ScrollView>
 
     <ImageView
         android:id="@+id/tips"
@@ -82,6 +110,14 @@
         app:layout_constraintHorizontal_bias="0.909"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.363" />
+        app:layout_constraintVertical_bias="0.55" />
+
+    <com.amap.api.maps.MapView
+        android:id="@+id/map"
+        android:layout_width="match_parent"
+        android:layout_height="208dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

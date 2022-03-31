@@ -2,4 +2,6 @@
     <string name="app_name">Exif</string>
     <string name="takePhoto">拍照</string>
     <string name="selectPhoto">选择照片</string>
+    <string name="eraseInfo">擦除</string>
+    <string name="waiting">等待读取...</string>
 </resources>
