@@ -14,7 +14,8 @@ android {
         // 集成高德地图 START 步骤1
         ndk {
             //设置支持的SO库架构（开发者可以根据需要，选择一个或多个平台的so）
-            abiFilters "armeabi", "armeabi-v7a", "arm64-v8a", "x86","x86_64"
+//            abiFilters "armeabi", "armeabi-v7a", "arm64-v8a", "x86","x86_64"
+            abiFilters "armeabi-v7a"
         }
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -29,7 +30,11 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            // minifyEnabled false
+            // ProGuard启用代码压缩
+            minifyEnabled true
+            // 移除未引用资源，和代码压缩协同工作
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
