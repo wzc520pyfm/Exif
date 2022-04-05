@@ -30,11 +30,11 @@ android {
 
     buildTypes {
         release {
-            // minifyEnabled false
+             minifyEnabled false
             // ProGuard启用代码压缩
-            minifyEnabled true
+            // minifyEnabled true
             // 移除未引用资源，和代码压缩协同工作
-            shrinkResources true
+            // shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
